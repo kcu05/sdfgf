@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D PPT Template — Single File</title>
+  <style>
+    :root{
+      --bg:#0b0d10;
+      --fg:#e9eef5;
+      --muted:#a9b4c0;
+      --accent:#62a8ff;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --deck-w:1280px;
+      --deck-h:720px;
+      --persp:1200px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:sans-serif;
+      background:var(--bg);
+      color:var(--fg);
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+    }
+    #deck{
+      width:min(95vw,var(--deck-w));
+      height:calc(min(95vw,var(--deck-w))*9/16);
+      max-height:min(85vh,var(--deck-h));
+      aspect-ratio:16/9;
+      position:relative;
+      perspective:var(--persp);
+      transform-style:preserve-3d;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      background:linear-gradient(180deg,#0f1217,#0b0d10);
+      overflow:hidden;
+    }
+    .slide{
+      position:absolute; inset:0;
+      padding:64px;
+      display:flex; flex-direction:column; gap:20px;
+      background:linear-gradient(180deg,#12161c,#0c0f13);
+      border-radius:var(--radius);
+      transform-style:preserve-3d;
+      opacity:0; pointer-events:none;
+    }
+    .slide.active{opacity:1; pointer-events:auto}
+    h1{font-size: clamp(36px, 7vw, 72px); margin:0}
+    h2{font-size: clamp(28px, 4vw, 48px); margin:0 0 8px 0}
+    p,li{line-height:1.6; color:var(--muted)}
+    .cover{display:grid; place-content:center; text-align:center}
+
+    /* Navigation bar */
+    #navbar {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 20px;
+      color: var(--fg);
+      z-index: 100;
+    }
+    #navbar button {
+      border: none;
+      background: transparent;
+      font-size: 42px;
+      color: var(--fg);
+      cursor: pointer;
+      user-select: none;
+      transition: opacity .3s;
+    }
+    #navbar button.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #navbar #title {
+      min-width: 200px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    /* 3D transitions */
+    .transition-ready .slide{transition: transform .8s cubic-bezier(.2,.6,.2,1), opacity .5s ease}
+    .fx-cube .slide.prev{transform: translateZ(-500px) rotateY(-90deg); opacity:0}
+    .fx-cube .slide.next{transform: translateZ(-500px) rotateY(90deg); opacity:0}
+    .fx-flip .slide.prev{transform: rotateY(-180deg); opacity:0}
+    .fx-flip .slide.next{transform: rotateY(180deg); opacity:0}
+    .fx-zoom .slide.prev{transform: translateZ(-600px) scale(.7); opacity:0}
+    .fx-zoom .slide.next{transform: translateZ(600px) scale(.7); opacity:0}
+    .fx-carousel .slide.prev{transform: translateX(-60%) rotateY(-45deg) translateZ(-200px); opacity:.25}
+    .fx-carousel .slide.next{transform: translateX(60%) rotateY(45deg) translateZ(-200px); opacity:.25}
+  </style>
+</head>
+<body>
+  <!-- 네비게이션 바 -->
+  <div id="navbar">
+    <button id="prev">‹</button>
+    <div id="title"></div>
+    <button id="next">›</button>
+  </div>
+
+  <div id="deck" class="transition-ready">
+    <section class="slide cover" data-transition="cube">
+      <h1>프로젝트 제목</h1>
+      <h2>부제 / 발표자 이름</h2>
+    </section>
+
+    <section class="slide" data-transition="flip">
+      <h2>목차</h2>
+      <ol>
+        <li>프로젝트 개요</li>
+        <li>문제 정의</li>
+        <li>해결 전략</li>
+        <li>타임라인</li>
+        <li>Q&A</li>
+      </ol>
+    </section>
+
+    <section class="slide" data-transition="zoom">
+      <h2>1. 프로젝트 개요</h2>
+      <p>목표, 가치 제안, 핵심 메시지를 간단히 설명하세요.</p>
+    </section>
+
+    <section class="slide" data-transition="carousel">
+      <h2>2. 문제 정의</h2>
+      <p>현재 상황과 문제점을 명확히 설명하세요.</p>
+    </section>
+
+    <section class="slide" data-transition="cube">
+      <h2>3. 해결 전략</h2>
+      <p>핵심 솔루션을 강조하세요.</p>
+    </section>
+
+    <section class="slide" data-transition="flip">
+      <h2>감사합니다</h2>
+      <p>질문을 환영합니다 🙌</p>
+    </section>
+  </div>
+
+  <script>
+    (function(){
+      const deck = document.getElementById('deck');
+      const slides = Array.from(deck.querySelectorAll('.slide'));
+      const prevBtn = document.getElementById('prev');
+      const nextBtn = document.getElementById('next');
+      const titleBox = document.getElementById('title');
+      let idx = 0;
+      let fx = '';
+
+      function clamp(n,min,max){return Math.max(min, Math.min(max, n));}
+      function applyTransitionClass(){
+        const t = slides[idx].dataset.transition || 'cube';
+        const map = {cube:'fx-cube', flip:'fx-flip', zoom:'fx-zoom', carousel:'fx-carousel'};
+        const nextFx = map[t] || 'fx-cube';
+        if(fx !== nextFx){
+          if(fx) deck.classList.remove(fx);
+          fx = nextFx;
+          deck.classList.add(fx);
+        }
+      }
+      function render(){
+        slides.forEach((s,i)=>{
+          s.classList.remove('prev','next','active');
+          const d = i - idx;
+          if(d === 0){ s.classList.add('active'); }
+          else if(d < 0){ s.classList.add('prev'); }
+          else { s.classList.add('next'); }
+        });
+        applyTransitionClass();
+        const h = slides[idx].querySelector('h1,h2,h3');
+        titleBox.textContent = h ? h.textContent : `슬라이드 ${idx+1}`;
+        prevBtn.classList.toggle('hidden', idx === 0);
+        nextBtn.classList.toggle('hidden', idx === slides.length-1);
+      }
+      function next(){ idx = clamp(idx+1, 0, slides.length-1); render(); }
+      function prev(){ idx = clamp(idx-1, 0, slides.length-1); render(); }
+
+      prevBtn.addEventListener('click', prev);
+      nextBtn.addEventListener('click', next);
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'ArrowRight' || e.key === ' '){ next(); }
+        else if(e.key === 'ArrowLeft'){ prev(); }
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>
